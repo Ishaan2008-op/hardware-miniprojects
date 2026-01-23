@@ -1,0 +1,59 @@
+
+const int pirPin = 2;
+const int buzzerPin = 8;
+
+bool buzzerOn = false;
+unsigned long lastMotionTime = 0;
+unsigned long buzzerStartTime = 0;
+
+// --- SETTINGS ---
+const unsigned long noMotionDelay = 10000;   // 10 sec wait karega motion rukne ke baad
+const unsigned long buzzerDuration = 3000;    // Buzzer 3 sec bajega (aapne 3s bola tha)
+const unsigned long pirWarmupTime = 30000;   
+
+unsigned long startTime = 0;
+
+void setup() {
+  pinMode(pirPin, INPUT);
+  pinMode(buzzerPin, OUTPUT);
+  digitalWrite(buzzerPin, LOW);
+  startTime = millis();
+  lastMotionTime = millis();
+  Serial.begin(9600); // Debugging ke liye
+}
+
+void loop() {
+  unsigned long currentTime = millis();
+
+  // Warmup skip
+  if (currentTime - startTime < pirWarmupTime) return;
+
+  int motion = digitalRead(pirPin);
+
+  // LOGIC: Agar motion detect hua, toh buzzer TURANT band karo
+  if (motion == HIGH) {
+    lastMotionTime = currentTime; // Timer reset karte raho jab tak motion hai
+    
+    if (buzzerOn) {
+      digitalWrite(buzzerPin, LOW); // Milliseconds mein response
+      buzzerOn = false;
+      Serial.println("Motion Detected! Buzzer STOPPED.");
+    }
+  }
+
+  // CONDITION 1: Agar 10 second tak halchal nahi hui -> Buzzer ON
+  if (!buzzerOn && (currentTime - lastMotionTime >= noMotionDelay)) {
+    digitalWrite(buzzerPin, HIGH);
+    buzzerOn = true;
+    buzzerStartTime = currentTime;
+    Serial.println("No motion for 10s! Buzzer START.");
+  }
+
+  // CONDITION 2: Agar 3 second pure ho gaye buzzer baje hue -> Buzzer OFF
+  if (buzzerOn && (currentTime - buzzerStartTime >= buzzerDuration)) {
+    digitalWrite(buzzerPin, LOW);
+    buzzerOn = false;
+    lastMotionTime = currentTime; // Taki firse 10s ka cycle shuru ho
+    Serial.println("3 Seconds complete. Buzzer OFF.");
+  }
+}
