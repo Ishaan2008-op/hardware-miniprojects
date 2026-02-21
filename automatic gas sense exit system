@@ -1,0 +1,42 @@
+#include <Servo.h>
+
+int gasPin = A0;
+int buzzer = 2;
+Servo myServo;
+
+unsigned long lastActionTime = 0;
+bool actionInProgress = false;
+
+void setup() {
+  pinMode(buzzer, OUTPUT);
+  Serial.begin(9600);
+  myServo.attach(9); // connect servo signal wire to pin 9
+  myServo.write(0);  // initial position
+}
+
+void loop() {
+  int gasValue = analogRead(gasPin);
+  Serial.println(gasValue);
+
+  // Only check readings if no action is in progress
+  if (!actionInProgress) {
+    if (gasValue > 400) {  // adjust threshold as needed
+      digitalWrite(buzzer, HIGH);
+
+      // Rotate servo to 90 degrees
+      myServo.write(90);
+      lastActionTime = millis();
+      actionInProgress = true;
+    } else {
+      digitalWrite(buzzer, LOW);
+    }
+  } else {
+    // Wait 5 seconds before resetting servo and allowing new readings
+    if (millis() - lastActionTime >= 5000) {
+      myServo.write(0); // return to original position
+      actionInProgress = false;
+    }
+  }
+
+  delay(100);
+}
